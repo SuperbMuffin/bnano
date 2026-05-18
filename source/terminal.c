@@ -1,7 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "terminal.h"
-#include "buffer.h"
 
 #include <stdlib.h>
 #include <termios.h>
@@ -11,7 +10,6 @@
 #include <sys/ioctl.h>
 #include <signal.h>
 #include <poll.h>
-#include <string.h>
 
 int term_rows;
 int term_cols;
@@ -29,9 +27,9 @@ void terminal_get_size(int *rows, int *cols)
 
 static void handle_sigwinch(int sig)
 {
-  (void) sig; // Unused parameter
+  (void) sig;
   terminal_get_size(&term_rows, &term_cols);
-  write(resize_pipe[1], "r", 1); // Notify main loop of resize
+  write(resize_pipe[1], "r", 1);
 }
 
 void terminal_disable_raw_mode(void)
@@ -139,72 +137,7 @@ void terminal_disable_alt_screen(void)
   write(STDOUT_FILENO, "\x1b[?1049l", 8);
 }
 
-struct abuf
+void terminal_write(const char *s)
 {
-  char *b;
-  int len;
-};
-
-#define ABUF_INIT {NULL, 0}
-
-void abAppend(struct abuf *ab, const char *s, int len)
-{
-  char *new = realloc(ab->b, ab->len + len);
-  if (new == NULL)
-    return;
-  memcpy(&new[ab->len], s, len);
-  ab->b = new;
-  ab->len += len;
-}
-
-void abFree(struct abuf *ab)
-{
-  free(ab->b);
-}
-
-void terminal_refresh_screen(Buffer *buffer)
-{
-  struct abuf ab = ABUF_INIT;
-
-  abAppend(&ab, "\x1b[?25l", 6);
-  abAppend(&ab, "\x1b[H", 3);
-
-  int len = buffer_length(buffer);
-  int start_index = buffer_visual_line_start(buffer, buffer->rowoff);
-  int x = 0, y = 0;
-
-  for (int i = start_index; i < len && y < term_rows - 1; i++)
-  {
-    char c = buffer_get_char(buffer, i);
-    if (c == '\n')
-    {
-      abAppend(&ab, "\x1b[K", 3);
-      abAppend(&ab, "\r\n", 2);
-      x = 0;
-      y++;
-    }
-    else
-    {
-      abAppend(&ab, &c, 1);
-      x++;
-      if (x >= term_cols)
-      {
-        abAppend(&ab, "\r\n", 2);
-        x = 0;
-        y++;
-      }
-    }
-  }
-
-  abAppend(&ab, "\x1b[J", 3);
-
-  int cy = cursor_line(buffer) - buffer->rowoff;
-  int cx = cursor_col(buffer);
-  char buf[32];
-  int blen = snprintf(buf, sizeof(buf), "\x1b[%d;%dH", cy + 1, cx + 1);
-  abAppend(&ab, buf, blen);
-  abAppend(&ab, "\x1b[?25h", 6);
-
-  write(STDOUT_FILENO, ab.b, ab.len);
-  abFree(&ab);
+  write(STDOUT_FILENO, s, __builtin_strlen(s));
 }

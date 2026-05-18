@@ -1,8 +1,6 @@
 #ifndef TERMINAL_H
 #define TERMINAL_H
 
-#include "buffer.h"
-
 extern int term_rows;
 extern int term_cols;
 
@@ -14,21 +12,20 @@ extern int resize_pipe[2];
 #define KEY_LEFT 1003
 #define KEY_RESIZE 1004
 
-// Raw mode functions
+// Raw mode
 void terminal_enable_raw_mode(void);
 void terminal_disable_raw_mode(void);
 
-// Alt screen buffer functions
+// Alternate screen buffer
 void terminal_enable_alt_screen(void);
 void terminal_disable_alt_screen(void);
 
-// Screen manipulation functions
+// Screen primitives
 void terminal_clear_screen(void);
-void terminal_refresh_screen(Buffer *buffer);
 void terminal_get_size(int *rows, int *cols);
-
-// Input/output functions
-int terminal_read_key(void);
 void terminal_write(const char *s);
+
+// Input
+int terminal_read_key(void);
 
 #endif // TERMINAL_H

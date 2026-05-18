@@ -10,6 +10,10 @@ void buffer_init(Buffer *b)
   b->coloff = 0;
   b->cursor_cx = 0;
   b->cursor_cy = 0;
+  b->mode = MODE_NORMAL;
+  b->cmdlen = 0;
+  b->cmdbuf[0] = '\0';
+  b->statusmsg[0] = '\0';
   b->rope = rope_create("");
 }
 

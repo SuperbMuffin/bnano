@@ -3,6 +3,15 @@
 
 #include "rope.h"
 
+typedef enum
+{
+  MODE_NORMAL,
+  MODE_INSERT,
+  MODE_COMMAND,
+} EditorMode;
+
+#define CMDBUF_MAX 128
+
 typedef struct
 {
   Rope *rope;
@@ -12,6 +21,10 @@ typedef struct
   int coloff;    // column offset for scrolling
   int cursor_cx; // cached visual column (invalidated on mutation)
   int cursor_cy; // cached visual row (invalidated on mutation)
+  EditorMode mode;
+  char cmdbuf[CMDBUF_MAX];    // current command line input
+  int cmdlen;                 // length of command so far
+  char statusmsg[CMDBUF_MAX]; // message shown after command execution
 } Buffer;
 
 void buffer_init(Buffer *b);

@@ -34,9 +34,12 @@ void fileio_save(Buffer *b, const char *path)
   if (f == NULL)
     return;
 
-  int len = buffer_length(b);
-  for (int i = 0; i < len; i++)
-    fputc(buffer_get_char(b, i), f);
+  char *text = rope_to_string(b->rope);
+  if (text != NULL)
+  {
+    fwrite(text, 1, (size_t) buffer_length(b), f);
+    free(text);
+  }
 
   fclose(f);
 }

@@ -10,6 +10,7 @@ typedef struct Rope
 } Rope;
 
 int rope_length(Rope *r);
+char *rope_to_string(Rope *r); // caller must free()
 Rope *rope_create(const char *str);
 char rope_index(Rope *r, int index);
 Rope *rope_delete(Rope *r, int start, int end);

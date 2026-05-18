@@ -154,6 +154,32 @@ static void rope_split(Rope *r, int index, Rope **left, Rope **right)
   }
 }
 
+static void rope_flatten(Rope *r, char *buf, int *pos)
+{
+  if (r == NULL)
+    return;
+  if (r->str != NULL)
+  {
+    memcpy(buf + *pos, r->str, (size_t) r->weight);
+    *pos += r->weight;
+    return;
+  }
+  rope_flatten(r->left, buf, pos);
+  rope_flatten(r->right, buf, pos);
+}
+
+char *rope_to_string(Rope *r)
+{
+  int len = rope_length(r);
+  char *buf = malloc((size_t) len + 1);
+  if (buf == NULL)
+    return NULL;
+  int pos = 0;
+  rope_flatten(r, buf, &pos);
+  buf[len] = '\0';
+  return buf;
+}
+
 char rope_index(Rope *r, int index)
 {
   if (r->str != NULL)

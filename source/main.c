@@ -2,40 +2,10 @@
 #include "ui.h"
 #include "buffer.h"
 #include "fileio.h"
+#include "command.h"
 
 #include <unistd.h>
 #include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-
-// Execute a colon command. Returns 1 if editor should quit.
-static int run_command(Buffer *buf, const char *cmd, const char *filename)
-{
-  if (strcmp(cmd, "q") == 0)
-    return 1;
-  else if (strcmp(cmd, "q!") == 0)
-    return 1;
-  else if (strcmp(cmd, "w") == 0)
-  {
-    if (filename)
-    {
-      fileio_save(buf, filename);
-      snprintf(buf->statusmsg, CMDBUF_MAX, "Written: %s", filename);
-    }
-    else
-      snprintf(buf->statusmsg, CMDBUF_MAX, "No filename");
-  }
-  else if (strcmp(cmd, "wq") == 0 || strcmp(cmd, "x") == 0)
-  {
-    if (filename)
-      fileio_save(buf, filename);
-    return 1;
-  }
-  else
-    snprintf(buf->statusmsg, CMDBUF_MAX, "Not a command: %s", cmd);
-
-  return 0;
-}
 
 int main(int argc, char *argv[])
 {
@@ -49,10 +19,13 @@ int main(int argc, char *argv[])
 
   Buffer buf;
   buffer_init(&buf);
+  command_register_defaults();
 
-  const char *filename = argc > 1 ? argv[1] : NULL;
-  if (filename)
-    fileio_open(&buf, filename);
+  if (argc > 1)
+  {
+    buffer_set_filename(&buf, argv[1]);
+    fileio_open(&buf, buf.filename);
+  }
 
   buffer_scroll(&buf);
   ui_render(&buf);
@@ -76,7 +49,7 @@ int main(int argc, char *argv[])
       {
         buf.cmdbuf[buf.cmdlen] = '\0';
         buf.mode = MODE_NORMAL;
-        if (run_command(&buf, buf.cmdbuf, filename))
+        if (command_run(&buf, buf.cmdbuf))
           break;
         buf.cmdlen = 0;
         buf.cmdbuf[0] = '\0';

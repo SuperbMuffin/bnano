@@ -1,6 +1,8 @@
 #include "buffer.h"
 #include "rope.h"
 #include "terminal.h"
+#include <stdlib.h>
+#include <string.h>
 
 void buffer_init(Buffer *b)
 {
@@ -14,11 +16,14 @@ void buffer_init(Buffer *b)
   b->cmdlen = 0;
   b->cmdbuf[0] = '\0';
   b->statusmsg[0] = '\0';
+  b->filename = NULL;
+  b->dirty = 0;
   b->rope = rope_create("");
 }
 
 void buffer_insert_char(Buffer *b, char c)
 {
+  b->dirty = 1;
   char str[2] = {c, '\0'};
   b->rope = rope_insert(b->rope, b->cursor, str);
   b->cursor++;
@@ -166,6 +171,7 @@ void buffer_set_char(Buffer *b, int x, int y, char c)
 
 void buffer_delete_char(Buffer *b)
 {
+  b->dirty = 1;
   if (b->cursor == 0)
     return;
   b->cursor--;
@@ -186,4 +192,16 @@ void buffer_scroll(Buffer *b)
   {
     b->rowoff = cy - term_rows + 2;
   }
+}
+
+void buffer_free(Buffer *b)
+{
+  free(b->filename);
+  b->filename = NULL;
+}
+
+void buffer_set_filename(Buffer *b, const char *name)
+{
+  free(b->filename);
+  b->filename = name ? strdup(name) : NULL;
 }

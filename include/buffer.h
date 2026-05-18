@@ -1,6 +1,9 @@
+#define _POSIX_C_SOURCE 200809L
+
 #ifndef BUFFER_H
 #define BUFFER_H
 
+#include <limits.h>
 #include "rope.h"
 
 typedef enum
@@ -11,6 +14,7 @@ typedef enum
 } EditorMode;
 
 #define CMDBUF_MAX 128
+#define STATUSMSG_MAX 256
 
 typedef struct
 {
@@ -22,12 +26,17 @@ typedef struct
   int cursor_cx; // cached visual column (invalidated on mutation)
   int cursor_cy; // cached visual row (invalidated on mutation)
   EditorMode mode;
-  char cmdbuf[CMDBUF_MAX];    // current command line input
-  int cmdlen;                 // length of command so far
-  char statusmsg[CMDBUF_MAX]; // message shown after command execution
+  char cmdbuf[CMDBUF_MAX];       // current command line input
+  int cmdlen;                    // length of command so far
+  char statusmsg[STATUSMSG_MAX]; // message shown after command execution
+  char *filename;                // heap-allocated current file path (NULL if unsaved)
+  int dirty;                     // 1 if unsaved changes exist
 } Buffer;
 
 void buffer_init(Buffer *b);
+void buffer_free(Buffer *b);
+
+void buffer_set_filename(Buffer *b, const char *filename);
 
 void buffer_insert_char(Buffer *b, char c);
 void buffer_move_cursor(Buffer *b, int dx, int dy);

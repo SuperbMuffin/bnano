@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
     else if (buf.mode == MODE_NORMAL)
     {
       buf.statusmsg[0] = '\0'; // clear status on any normal keypress
-      if (c == ':')
+      if (c == ':' || c == ';')
       {
         buf.mode = MODE_COMMAND;
         buf.cmdlen = 0;

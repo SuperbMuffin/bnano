@@ -96,14 +96,29 @@ int terminal_read_key(void)
 
   if (c == '\x1b')
   {
+    struct pollfd esc_fd;
+    esc_fd.fd = STDIN_FILENO;
+    esc_fd.events = POLLIN;
+
+    if (poll(&esc_fd, 1, 25) <= 0 || !(esc_fd.revents & POLLIN))
+    {
+      return '\x1b';
+    }
+
     char seq[3];
     if (read(STDIN_FILENO, &seq[0], 1) != 1)
-      return '\x1b';
-    if (read(STDIN_FILENO, &seq[1], 1) != 1)
       return '\x1b';
 
     if (seq[0] == '[')
     {
+      if (poll(&esc_fd, 1, 25) <= 0 || !(esc_fd.revents & POLLIN))
+      {
+        return '\x1b';
+      }
+
+      if (read(STDIN_FILENO, &seq[1], 1) != 1)
+        return '\x1b';
+
       switch (seq[1])
       {
         case 'A':
@@ -118,6 +133,7 @@ int terminal_read_key(void)
     }
     return '\x1b';
   }
+
   return (unsigned char) c;
 }
 

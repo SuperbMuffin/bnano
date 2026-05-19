@@ -182,8 +182,14 @@ char *rope_to_string(Rope *r)
 
 char rope_index(Rope *r, int index)
 {
+  if (r == NULL || index < 0)
+    return '\0';
   if (r->str != NULL)
+  {
+    if (index >= r->weight)
+      return '\0';
     return r->str[index];
+  }
   if (index < r->weight)
     return rope_index(r->left, index);
   else

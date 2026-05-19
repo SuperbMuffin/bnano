@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include "buffer.h"
 #include "rope.h"
 #include "terminal.h"
@@ -156,17 +158,6 @@ void buffer_move_cursor(Buffer *b, int dx, int dy)
       b->cursor = len;
     buffer_recompute_cursor(b);
   }
-}
-
-void buffer_set_char(Buffer *b, int x, int y, char c)
-{
-  if (x < 0 || x >= term_cols || y < 0 || y >= term_rows)
-    return;
-  int index = buffer_visual_line_start(b, y) + x;
-  if (index >= rope_length(b->rope))
-    return;
-  b->rope = rope_delete(b->rope, index, index + 1);
-  b->rope = rope_insert(b->rope, index, (char[]){c, '\0'});
 }
 
 void buffer_delete_char(Buffer *b)

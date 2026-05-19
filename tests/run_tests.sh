@@ -6,6 +6,8 @@ TESTS_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(dirname "$TESTS_DIR")"
 SRC_DIR="$ROOT_DIR/source"
 INCLUDE_DIR="$ROOT_DIR/include"
+COMMON_DIR="$TESTS_DIR/common"
+CC="${CC:-clang}"
 
 GREEN="\033[0;32m"
 RED="\033[0;31m"
@@ -19,22 +21,33 @@ failed=0
 for test_file in "$TESTS_DIR"/*/test_*.c; do
   suite_dir="$(dirname "$test_file")"
   suite_name="$(basename "$suite_dir")"
+
+  # skip the common directory — it's a library, not a suite
+  [ "$suite_name" = "common" ] && continue
+
   binary="$suite_dir/test_$suite_name"
-  
+
   echo -e "${BOLD}${CYAN}=============================${RESET}"
   echo -e "${BOLD}${CYAN}==> $suite_name${RESET}"
 
   extra_sources=""
   if [ -f "$suite_dir/deps" ]; then
     while IFS= read -r dep; do
-      extra_sources="$extra_sources $SRC_DIR/$dep"
+      # deps can be relative to source/ or tests/
+      if [ -f "$SRC_DIR/$dep" ]; then
+        extra_sources="$extra_sources $SRC_DIR/$dep"
+      elif [ -f "$TESTS_DIR/$dep" ]; then
+        extra_sources="$extra_sources $TESTS_DIR/$dep"
+      fi
     done < "$suite_dir/deps"
   fi
 
-  if clang -Wall -Wextra \
+  if "$CC" -Wall -Wextra \
       -I"$INCLUDE_DIR" \
+      -I"$COMMON_DIR" \
       "$test_file" \
       "$SRC_DIR/$suite_name.c" \
+      "$COMMON_DIR/test_common.c" \
       $extra_sources \
       -o "$binary" 2>&1; then
     if "$binary"; then

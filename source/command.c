@@ -107,8 +107,10 @@ static int cmd_file(Buffer *buf, const char *args)
 {
   if (!args[0])
   {
-    snprintf(buf->statusmsg, STATUSMSG_MAX, buf->filename[0] ? "\"%s\"" : "No filename",
-             buf->filename);
+    if (buf->filename && buf->filename[0])
+      snprintf(buf->statusmsg, STATUSMSG_MAX, "\"%s\"", buf->filename);
+    else
+      snprintf(buf->statusmsg, STATUSMSG_MAX, "No filename");
     return 0;
   }
   buffer_set_filename(buf, args);

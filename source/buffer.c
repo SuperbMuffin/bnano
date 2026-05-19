@@ -50,7 +50,7 @@ int buffer_visual_line_start(Buffer *b, int target_line)
   return len;
 }
 
-// Recompute cx/cy from scratch — call after any jump that changes cursor position non-incrementally
+// Recompute cx/cy from scratch — only call after non-incremental jumps (file open, goto, etc.)
 static void buffer_recompute_cursor(Buffer *b)
 {
   int line = 0, col = 0;
@@ -81,7 +81,22 @@ void buffer_insert_char(Buffer *b, char c)
   char str[2] = {c, '\0'};
   b->rope = rope_insert(b->rope, b->cursor, str);
   b->cursor++;
-  buffer_recompute_cursor(b);
+
+  // Incremental update: just advance cx/cy by one character
+  if (c == '\n')
+  {
+    b->cursor_cy++;
+    b->cursor_cx = 0;
+  }
+  else
+  {
+    b->cursor_cx++;
+    if (b->cursor_cx >= term_cols)
+    {
+      b->cursor_cy++;
+      b->cursor_cx = 0;
+    }
+  }
   b->saved_col = b->cursor_cx;
 }
 
@@ -114,12 +129,52 @@ void buffer_move_cursor(Buffer *b, int dx, int dy)
 
   if (dy == 0)
   {
-    b->cursor += dx;
-    if (b->cursor < 0)
-      b->cursor = 0;
-    if (b->cursor > len)
-      b->cursor = len;
-    buffer_recompute_cursor(b);
+    // Incremental horizontal move: update cx/cy by walking only the stepped characters
+    int new_cursor = b->cursor + dx;
+    if (new_cursor < 0)
+      new_cursor = 0;
+    if (new_cursor > len)
+      new_cursor = len;
+
+    // Only do incremental update for single-step moves; fall back for big jumps (0/$)
+    if (new_cursor == b->cursor + 1)
+    {
+      char stepped = rope_index(b->rope, b->cursor);
+      b->cursor = new_cursor;
+      if (stepped == '\n')
+      {
+        b->cursor_cy++;
+        b->cursor_cx = 0;
+      }
+      else
+      {
+        b->cursor_cx++;
+        if (b->cursor_cx >= term_cols)
+        {
+          b->cursor_cy++;
+          b->cursor_cx = 0;
+        }
+      }
+    }
+    else if (new_cursor == b->cursor - 1)
+    {
+      b->cursor = new_cursor;
+      char prev = rope_index(b->rope, b->cursor);
+      if (prev == '\n' || b->cursor_cx == 0)
+      {
+        // Stepped back over a newline or wrap — need full recompute
+        buffer_recompute_cursor(b);
+      }
+      else
+      {
+        b->cursor_cx--;
+      }
+    }
+    else
+    {
+      b->cursor = new_cursor;
+      buffer_recompute_cursor(b);
+    }
     b->saved_col = b->cursor_cx;
   }
   else
@@ -128,8 +183,26 @@ void buffer_move_cursor(Buffer *b, int dx, int dy)
     if (target_line < 0)
       target_line = 0;
 
-    int line_start = buffer_visual_line_start(b, target_line);
-    int next_line_start = buffer_visual_line_start(b, target_line + 1);
+    // For dy=1: we know the current line starts at (cursor - cursor_cx), so the target
+    // line starts where the current line ends — only need one scan for target+1.
+    // For dy=-1: we know the current line start is (cursor - cursor_cx), which equals
+    // next_line_start for the target — only need one scan for target.
+    int line_start, next_line_start;
+    if (dy == 1)
+    {
+      line_start = b->cursor - b->cursor_cx; // current line start = target line start when dy=1
+      next_line_start = buffer_visual_line_start(b, target_line + 1);
+    }
+    else if (dy == -1)
+    {
+      line_start = buffer_visual_line_start(b, target_line);
+      next_line_start = b->cursor - b->cursor_cx; // current line start = next_line_start for target
+    }
+    else
+    {
+      line_start = buffer_visual_line_start(b, target_line);
+      next_line_start = buffer_visual_line_start(b, target_line + 1);
+    }
 
     int target_line_len = next_line_start - line_start;
     if (target_line_len > 0 && rope_index(b->rope, line_start + target_line_len - 1) == '\n')
@@ -141,6 +214,7 @@ void buffer_move_cursor(Buffer *b, int dx, int dy)
       b->cursor = 0;
     if (b->cursor > len)
       b->cursor = len;
+    // cx/cy must be recomputed after vertical jump — no cheap incremental path here
     buffer_recompute_cursor(b);
   }
 }
@@ -152,7 +226,20 @@ void buffer_delete_char(Buffer *b)
     return;
   b->cursor--;
   b->rope = rope_delete(b->rope, b->cursor, b->cursor + 1);
-  buffer_recompute_cursor(b);
+
+  // The deleted char was at b->cursor (before decrement). Stepping back over it:
+  char deleted = rope_index(b->rope, b->cursor); // char now at that position is the one after
+  // We need the char that WAS there — but it's gone. Use cx position to detect newline case.
+  if (b->cursor_cx == 0)
+  {
+    // We stepped back over a newline or a wrap boundary — full recompute
+    buffer_recompute_cursor(b);
+  }
+  else
+  {
+    b->cursor_cx--;
+    (void) deleted;
+  }
   b->saved_col = b->cursor_cx;
 }
 

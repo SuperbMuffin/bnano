@@ -25,6 +25,12 @@ void terminal_get_size(int *rows, int *cols)
   *cols = ws.ws_col;
 }
 
+static void terminal_close_pipe(void)
+{
+  close(resize_pipe[0]);
+  close(resize_pipe[1]);
+}
+
 static void handle_sigwinch(int sig)
 {
   (void) sig;
@@ -46,6 +52,7 @@ void terminal_enable_raw_mode(void)
     perror("pipe");
     exit(1);
   }
+  atexit(terminal_close_pipe);
 
   int flags = fcntl(resize_pipe[0], F_GETFL, 0);
   fcntl(resize_pipe[0], F_SETFL, flags | O_NONBLOCK);

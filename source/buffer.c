@@ -11,7 +11,6 @@ void buffer_init(Buffer *b)
   b->cursor = 0;
   b->saved_col = 0;
   b->rowoff = 0;
-  b->coloff = 0;
   b->cursor_cx = 0;
   b->cursor_cy = 0;
   b->mode = MODE_NORMAL;
@@ -173,6 +172,8 @@ void buffer_scroll(Buffer *b)
 
 void buffer_free(Buffer *b)
 {
+  rope_free(b->rope);
+  b->rope = NULL;
   free(b->filename);
   b->filename = NULL;
 }

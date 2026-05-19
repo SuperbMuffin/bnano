@@ -20,7 +20,6 @@ typedef struct
   int cursor;
   int saved_col; // sticky column for up/down navigation
   int rowoff;    // row offset for scrolling
-  int coloff;    // column offset for scrolling
   int cursor_cx; // cached visual column (invalidated on mutation)
   int cursor_cy; // cached visual row (invalidated on mutation)
   EditorMode mode;

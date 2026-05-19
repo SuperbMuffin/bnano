@@ -94,7 +94,7 @@ static int cmd_write(Buffer *buf, const char *args)
 static int cmd_write_quit(Buffer *buf, const char *args)
 {
   cmd_write(buf, args);
-  return 1;
+  return cmd_quit(buf, args);
 }
 
 static int cmd_file(Buffer *buf, const char *args)

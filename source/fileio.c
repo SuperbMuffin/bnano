@@ -9,12 +9,15 @@ void fileio_open(Buffer *b, const char *path)
 {
   FILE *f = fopen(path, "r");
   if (f == NULL)
-    return; // new file, leave buffer empty
+    return;
 
+  char *saved = b->filename;
+  b->filename = NULL;
   rope_free(b->rope);
   buffer_init(b);
-  b->rope = rope_create("");
+  b->filename = saved;
 
+  b->rope = rope_create("");
   char chunk[4097];
   size_t n;
   int pos = 0;
@@ -24,7 +27,6 @@ void fileio_open(Buffer *b, const char *path)
     b->rope = rope_insert(b->rope, pos, chunk);
     pos += (int) n;
   }
-
   fclose(f);
 }
 

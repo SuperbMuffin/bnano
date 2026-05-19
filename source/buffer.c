@@ -23,30 +23,6 @@ void buffer_init(Buffer *b)
   b->rope = rope_create("");
 }
 
-void buffer_insert_char(Buffer *b, char c)
-{
-  b->dirty = 1;
-  char str[2] = {c, '\0'};
-  b->rope = rope_insert(b->rope, b->cursor, str);
-  b->cursor++;
-
-  if (c == '\n')
-  {
-    b->cursor_cy++;
-    b->cursor_cx = 0;
-  }
-  else
-  {
-    b->cursor_cx++;
-    if (b->cursor_cx >= term_cols)
-    {
-      b->cursor_cy++;
-      b->cursor_cx = 0;
-    }
-  }
-  b->saved_col = b->cursor_cx;
-}
-
 int buffer_visual_line_start(Buffer *b, int target_line)
 {
   int len = rope_length(b->rope);
@@ -98,6 +74,16 @@ static void buffer_recompute_cursor(Buffer *b)
   }
   b->cursor_cy = line;
   b->cursor_cx = col;
+}
+
+void buffer_insert_char(Buffer *b, char c)
+{
+  b->dirty = 1;
+  char str[2] = {c, '\0'};
+  b->rope = rope_insert(b->rope, b->cursor, str);
+  b->cursor++;
+  buffer_recompute_cursor(b);
+  b->saved_col = b->cursor_cx;
 }
 
 // cursor_line and cursor_col just return cached values

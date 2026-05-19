@@ -1,7 +1,7 @@
 #include "rope.h"
 
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 static char *rope_strdup(const char *str)
 {

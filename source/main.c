@@ -1,11 +1,11 @@
+#include "buffer.h"
+#include "command.h"
+#include "fileio.h"
 #include "terminal.h"
 #include "ui.h"
-#include "buffer.h"
-#include "fileio.h"
-#include "command.h"
 
-#include <unistd.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 int main(int argc, char *argv[])
 {

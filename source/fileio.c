@@ -1,6 +1,6 @@
 #include "fileio.h"
-#include "rope.h"
 #include "buffer.h"
+#include "rope.h"
 
 #include <stdio.h>
 #include <stdlib.h>

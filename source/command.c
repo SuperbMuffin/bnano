@@ -2,8 +2,8 @@
 #include "buffer.h"
 #include "fileio.h"
 
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 
 typedef struct
 {

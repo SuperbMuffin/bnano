@@ -15,6 +15,6 @@ AlignConsecutiveAssignments: false
 AlignConsecutiveDeclarations: false
 IncludeBlocks: Preserve
 IndentCaseLabels: true
-SortIncludes: false
+SortIncludes: true
 DerivePointerAlignment: false
 AlignEscapedNewlines: Left

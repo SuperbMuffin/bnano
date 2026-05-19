@@ -2,14 +2,14 @@
 
 #include "terminal.h"
 
+#include <fcntl.h>
+#include <poll.h>
+#include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <signal.h>
-#include <poll.h>
 
 int term_rows;
 int term_cols;

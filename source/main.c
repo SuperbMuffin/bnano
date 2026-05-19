@@ -36,6 +36,13 @@ int main(int argc, char *argv[])
     if (c == -1)
       continue;
 
+    if (c == KEY_RESIZE)
+    {
+      buffer_scroll(&buf);
+      ui_render(&buf);
+      continue;
+    }
+
     if (buf.mode == MODE_COMMAND)
     {
       if (c == '\x1b') // ESC → cancel

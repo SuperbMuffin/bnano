@@ -28,13 +28,13 @@ Then move the binary from ``bnano/build`` to your PATH
 
 Contributions are always welcome!
 
-See `contributing.md` for ways to get started.
+See `CONTRIBUTING.md` for ways to get started.
 
 ## FAQ
 
 #### How is it pronounced? 
 
-It's prounced ``banano`` like ``banana`` but with a ``o`` instead of a ``a``.
+It's pronounced ``banano`` like ``banana`` but with a ``o`` instead of a ``a``.
 
 #### Why Does this exist?
 

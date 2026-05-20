@@ -188,18 +188,18 @@ static void rope_flatten_range(Rope *r, int *pos, int start, int end, char *buf,
   if (r->str != NULL)
   {
     int leaf_start = *pos;
-    int leaf_end   = *pos + r->weight;
+    int leaf_end = *pos + r->weight;
     int lo = leaf_start > start ? leaf_start : start;
-    int hi = leaf_end   < end   ? leaf_end   : end;
+    int hi = leaf_end < end ? leaf_end : end;
     if (lo < hi)
     {
-      memcpy(buf + *out, r->str + (lo - leaf_start), (size_t)(hi - lo));
+      memcpy(buf + *out, r->str + (lo - leaf_start), (size_t) (hi - lo));
       *out += hi - lo;
     }
     *pos += r->weight;
     return;
   }
-  rope_flatten_range(r->left,  pos, start, end, buf, out);
+  rope_flatten_range(r->left, pos, start, end, buf, out);
   rope_flatten_range(r->right, pos, start, end, buf, out);
 }
 
@@ -207,12 +207,15 @@ static void rope_flatten_range(Rope *r, int *pos, int start, int end, char *buf,
 char *rope_slice(Rope *r, int start, int end)
 {
   int total = rope_length(r);
-  if (start < 0)   start = 0;
-  if (end > total) end   = total;
+  if (start < 0)
+    start = 0;
+  if (end > total)
+    end = total;
   if (start >= end)
   {
     char *empty = malloc(1);
-    if (empty) empty[0] = '\0';
+    if (empty)
+      empty[0] = '\0';
     return empty;
   }
   int len = end - start;

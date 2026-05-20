@@ -202,9 +202,8 @@ void buffer_move_cursor(Buffer *b, int dx, int dy)
     for (int i = 0; i <= len; i++)
     {
       // Check for line boundary: newline char or wrap or end-of-buffer
-      int boundary = (i == len)
-                   || (text[i] == '\n')
-                   || (text[i] != '\n' && col > 0 && col >= term_cols);
+      int boundary =
+          (i == len) || (text[i] == '\n') || (text[i] != '\n' && col > 0 && col >= term_cols);
 
       if (!found_start && line == target_line)
       {

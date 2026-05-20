@@ -2,6 +2,7 @@
 
 #include "ui.h"
 #include "buffer.h"
+#include "rope.h"
 #include "terminal.h"
 
 #include <stdio.h>
@@ -75,13 +76,18 @@ static void ab_free(struct abuf *ab)
 
 static void render_content(struct abuf *ab, Buffer *buffer)
 {
-  int len = buffer_length(buffer);
+  int len         = buffer_length(buffer);
   int start_index = buffer_visual_line_start(buffer, buffer->rowoff);
   int x = 0, y = 0;
 
-  for (int i = start_index; i < len && y < term_rows - 1; i++)
+  // Flatten only the visible portion of the rope — one O(n) pass instead of
+  // O(n log n) individual rope_index calls.
+  char *slice = rope_slice(buffer->rope, start_index, len);
+  int   slice_len = slice ? (int)(len - start_index) : 0;
+
+  for (int i = 0; i < slice_len && y < term_rows - 1; i++)
   {
-    char c = buffer_get_char(buffer, i);
+    char c = slice[i];
     if (c == '\n')
     {
       ab_lit(ab, ESC_CLEAR_LINE "\r\n");
@@ -100,6 +106,8 @@ static void render_content(struct abuf *ab, Buffer *buffer)
       }
     }
   }
+
+  free(slice);
 
   while (y < term_rows - 1)
   {

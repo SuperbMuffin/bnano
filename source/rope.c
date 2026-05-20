@@ -180,6 +180,51 @@ char *rope_to_string(Rope *r)
   return buf;
 }
 
+// Leaf-walk helper: copy bytes from leaves overlapping [start, end).
+static void rope_flatten_range(Rope *r, int *pos, int start, int end, char *buf, int *out)
+{
+  if (r == NULL || *pos >= end)
+    return;
+  if (r->str != NULL)
+  {
+    int leaf_start = *pos;
+    int leaf_end   = *pos + r->weight;
+    int lo = leaf_start > start ? leaf_start : start;
+    int hi = leaf_end   < end   ? leaf_end   : end;
+    if (lo < hi)
+    {
+      memcpy(buf + *out, r->str + (lo - leaf_start), (size_t)(hi - lo));
+      *out += hi - lo;
+    }
+    *pos += r->weight;
+    return;
+  }
+  rope_flatten_range(r->left,  pos, start, end, buf, out);
+  rope_flatten_range(r->right, pos, start, end, buf, out);
+}
+
+// Returns a newly allocated string for rope[start..end). Caller must free().
+char *rope_slice(Rope *r, int start, int end)
+{
+  int total = rope_length(r);
+  if (start < 0)   start = 0;
+  if (end > total) end   = total;
+  if (start >= end)
+  {
+    char *empty = malloc(1);
+    if (empty) empty[0] = '\0';
+    return empty;
+  }
+  int len = end - start;
+  char *buf = malloc((size_t) len + 1);
+  if (buf == NULL)
+    return NULL;
+  int pos = 0, out = 0;
+  rope_flatten_range(r, &pos, start, end, buf, &out);
+  buf[out] = '\0';
+  return buf;
+}
+
 char rope_index(Rope *r, int index)
 {
   if (r == NULL || index < 0)

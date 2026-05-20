@@ -25,14 +25,18 @@ void buffer_init(Buffer *b)
 int buffer_visual_line_start(Buffer *b, int target_line)
 {
   int len = rope_length(b->rope);
-  int line = 0;
-  int col = 0;
+  char *text = rope_slice(b->rope, 0, len);
+  if (text == NULL)
+    return 0;
+  int line = 0, col = 0;
   for (int i = 0; i < len; i++)
   {
     if (line == target_line)
+    {
+      free(text);
       return i;
-    char c = rope_index(b->rope, i);
-    if (c == '\n')
+    }
+    if (text[i] == '\n')
     {
       line++;
       col = 0;
@@ -47,6 +51,7 @@ int buffer_visual_line_start(Buffer *b, int target_line)
       }
     }
   }
+  free(text);
   return len;
 }
 
@@ -183,39 +188,72 @@ void buffer_move_cursor(Buffer *b, int dx, int dy)
     if (target_line < 0)
       target_line = 0;
 
-    // For dy=1: we know the current line starts at (cursor - cursor_cx), so the target
-    // line starts where the current line ends — only need one scan for target+1.
-    // For dy=-1: we know the current line start is (cursor - cursor_cx), which equals
-    // next_line_start for the target — only need one scan for target.
-    int line_start, next_line_start;
-    if (dy == 1)
+    // Walk the rope once as a flat string to find target_line_start and
+    // target_line_end. We also record the cursor cx/cy directly so we
+    // don't need a second O(n) recompute pass afterwards.
+    char *text = rope_slice(b->rope, 0, len);
+    if (text == NULL)
+      return;
+
+    int line = 0, col = 0;
+    int line_start = 0, next_line_start = len;
+    int found_start = 0;
+
+    for (int i = 0; i <= len; i++)
     {
-      line_start = b->cursor - b->cursor_cx; // current line start = target line start when dy=1
-      next_line_start = buffer_visual_line_start(b, target_line + 1);
-    }
-    else if (dy == -1)
-    {
-      line_start = buffer_visual_line_start(b, target_line);
-      next_line_start = b->cursor - b->cursor_cx; // current line start = next_line_start for target
-    }
-    else
-    {
-      line_start = buffer_visual_line_start(b, target_line);
-      next_line_start = buffer_visual_line_start(b, target_line + 1);
+      // Check for line boundary: newline char or wrap or end-of-buffer
+      int boundary = (i == len)
+                   || (text[i] == '\n')
+                   || (text[i] != '\n' && col > 0 && col >= term_cols);
+
+      if (!found_start && line == target_line)
+      {
+        line_start = i;
+        found_start = 1;
+      }
+
+      if (found_start && boundary)
+      {
+        // Exclusive end of the target line's content (newline not included).
+        next_line_start = i;
+        break;
+      }
+
+      if (i == len)
+        break;
+
+      if (text[i] == '\n')
+      {
+        line++;
+        col = 0;
+      }
+      else
+      {
+        col++;
+        if (col >= term_cols)
+        {
+          line++;
+          col = 0;
+        }
+      }
     }
 
+    free(text);
+
+    // Clamp to line length, preserving saved column.
+    // next_line_start is already the exclusive end of content (no newline).
     int target_line_len = next_line_start - line_start;
-    if (target_line_len > 0 && rope_index(b->rope, line_start + target_line_len - 1) == '\n')
-      target_line_len--;
 
-    int col = b->saved_col < target_line_len ? b->saved_col : target_line_len;
-    b->cursor = line_start + col;
+    int new_col = b->saved_col < target_line_len ? b->saved_col : target_line_len;
+    b->cursor = line_start + new_col;
     if (b->cursor < 0)
       b->cursor = 0;
     if (b->cursor > len)
       b->cursor = len;
-    // cx/cy must be recomputed after vertical jump — no cheap incremental path here
-    buffer_recompute_cursor(b);
+
+    // cx/cy fall directly out of the scan above — no second pass needed
+    b->cursor_cy = target_line;
+    b->cursor_cx = new_col;
   }
 }
 

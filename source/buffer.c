@@ -227,19 +227,11 @@ void buffer_delete_char(Buffer *b)
   b->cursor--;
   b->rope = rope_delete(b->rope, b->cursor, b->cursor + 1);
 
-  // The deleted char was at b->cursor (before decrement). Stepping back over it:
-  char deleted = rope_index(b->rope, b->cursor); // char now at that position is the one after
-  // We need the char that WAS there — but it's gone. Use cx position to detect newline case.
+  // The deleted char is gone; use cx position to detect newline/wrap case.
   if (b->cursor_cx == 0)
-  {
-    // We stepped back over a newline or a wrap boundary — full recompute
     buffer_recompute_cursor(b);
-  }
   else
-  {
     b->cursor_cx--;
-    (void) deleted;
-  }
   b->saved_col = b->cursor_cx;
 }
 

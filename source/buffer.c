@@ -22,20 +22,15 @@ void buffer_init(Buffer *b)
   b->rope = rope_create("");
 }
 
-int buffer_visual_line_start(Buffer *b, int target_line)
+// Internal: find the byte offset of target_line given a pre-flattened string.
+// Avoids allocating when the caller already has the full text.
+int buffer_visual_line_start_str(const char *text, int len, int target_line)
 {
-  int len = rope_length(b->rope);
-  char *text = rope_slice(b->rope, 0, len);
-  if (text == NULL)
-    return 0;
   int line = 0, col = 0;
   for (int i = 0; i < len; i++)
   {
     if (line == target_line)
-    {
-      free(text);
       return i;
-    }
     if (text[i] == '\n')
     {
       line++;
@@ -51,8 +46,18 @@ int buffer_visual_line_start(Buffer *b, int target_line)
       }
     }
   }
-  free(text);
   return len;
+}
+
+int buffer_visual_line_start(Buffer *b, int target_line)
+{
+  int len = rope_length(b->rope);
+  char *text = rope_slice(b->rope, 0, len);
+  if (text == NULL)
+    return 0;
+  int result = buffer_visual_line_start_str(text, len, target_line);
+  free(text);
+  return result;
 }
 
 // Recompute cx/cy from scratch — only call after non-incremental jumps (file open, goto, etc.)

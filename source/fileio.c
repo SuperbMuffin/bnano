@@ -11,10 +11,16 @@ void fileio_open(Buffer *b, const char *path)
   if (f == NULL)
     return;
 
+  // Free the existing rope before reinitialising. buffer_init will create a
+  // fresh empty rope which we immediately replace — free that one too so we
+  // don't leak it.
+  rope_free(b->rope);
+  b->rope = NULL;
+
   char *saved = b->filename;
   b->filename = NULL;
-  rope_free(b->rope);
-  buffer_init(b);
+  buffer_init(b);     // creates a throwaway empty rope
+  rope_free(b->rope); // free it — we're about to replace it
   b->filename = saved;
 
   // Read the entire file in one shot, then create the rope from it.

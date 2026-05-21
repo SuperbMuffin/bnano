@@ -41,7 +41,6 @@ void buffer_delete_char(Buffer *b);
 
 void buffer_scroll(Buffer *b);
 
-void buffer_set_char(Buffer *b, int x, int y, char c);
 char buffer_get_char(Buffer *b, int index);
 
 int cursor_line(Buffer *b);
@@ -49,5 +48,6 @@ int cursor_col(Buffer *b);
 
 int buffer_length(Buffer *b);
 int buffer_visual_line_start(Buffer *b, int target_line);
+int buffer_visual_line_start_str(const char *text, int len, int target_line);
 
 #endif // BUFFER_H

@@ -1,6 +1,7 @@
 #include "buffer.h"
 #include "command.h"
 #include "fileio.h"
+#include "history.h"
 #include "terminal.h"
 #include "ui.h"
 
@@ -19,6 +20,7 @@ int main(int argc, char *argv[])
 
   Buffer buf;
   buffer_init(&buf);
+  history_init();
   command_register_defaults();
 
   if (argc > 1)
@@ -86,12 +88,16 @@ int main(int argc, char *argv[])
         buf.cmdbuf[0] = '\0';
       }
       else if (c == 'i')
+      {
+        history_on_insert_mode(&buf);
         buf.mode = MODE_INSERT;
+      }
       else if (c == 'a')
       {
         int len = buffer_length(&buf);
         if (buf.cursor < len)
           buffer_move_cursor(&buf, 1, 0);
+        history_on_insert_mode(&buf);
         buf.mode = MODE_INSERT;
       }
       else if (c == 'o')
@@ -99,9 +105,14 @@ int main(int argc, char *argv[])
         int len = buffer_length(&buf);
         while (buf.cursor < len && buffer_get_char(&buf, buf.cursor) != '\n')
           buffer_move_cursor(&buf, 1, 0);
+        history_on_insert_mode(&buf);
         buffer_insert_char(&buf, '\n');
         buf.mode = MODE_INSERT;
       }
+      else if (c == 'u')
+        history_undo(&buf);
+      else if (c == 18) // ctrl-r
+        history_redo(&buf);
       else if (c == 'h' || c == KEY_LEFT)
         buffer_move_cursor(&buf, -1, 0);
       else if (c == 'l' || c == KEY_RIGHT)
@@ -136,11 +147,20 @@ int main(int argc, char *argv[])
       if (c == '\x1b')
         buf.mode = MODE_NORMAL;
       else if (c >= 32 && c <= 126)
+      {
+        history_on_action(&buf, ACTION_INSERT);
         buffer_insert_char(&buf, c);
+      }
       else if (c == 127)
+      {
+        history_on_action(&buf, ACTION_DELETE);
         buffer_delete_char(&buf);
+      }
       else if (c == '\r')
+      {
+        history_push(&buf);
         buffer_insert_char(&buf, '\n');
+      }
       else if (c == KEY_UP)
         buffer_move_cursor(&buf, 0, -1);
       else if (c == KEY_DOWN)

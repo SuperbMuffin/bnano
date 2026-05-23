@@ -156,6 +156,14 @@ int main(int argc, char *argv[])
         history_on_action(&buf, ACTION_DELETE);
         buffer_delete_char(&buf);
       }
+      else if (c == '\t')
+      {
+        // Expand tab to spaces, aligning to the next tab stop
+        history_on_action(&buf, ACTION_INSERT);
+        int spaces = TAB_WIDTH - (cursor_col(&buf) % TAB_WIDTH);
+        for (int i = 0; i < spaces; i++)
+          buffer_insert_char(&buf, ' ');
+      }
       else if (c == '\r')
       {
         history_push(&buf);

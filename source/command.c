@@ -1,8 +1,11 @@
 #include "command.h"
 #include "buffer.h"
 #include "fileio.h"
+#include "rope.h"
 
+#include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 typedef struct
@@ -28,6 +31,9 @@ void command_register(const char *name, CommandFn fn)
   registry[registry_len].fn = fn;
   registry_len++;
 }
+
+// Forward declaration needed by command_run's numeric fallback
+static int cmd_goto(Buffer *buf, const char *args);
 
 // Split "w foo.c" into name="w", args="foo.c"
 int command_run(Buffer *buf, const char *input)
@@ -55,6 +61,20 @@ int command_run(Buffer *buf, const char *input)
   {
     if (strcmp(registry[i].name, name) == 0)
       return registry[i].fn(buf, args);
+  }
+
+  // :N — bare number jumps to line N
+  int all_digits = 1;
+  for (int i = 0; name[i]; i++)
+    if (!isdigit((unsigned char) name[i]))
+    {
+      all_digits = 0;
+      break;
+    }
+  if (all_digits && name[0])
+  {
+    const char *num_args = name; // reuse name as the line number string
+    return cmd_goto(buf, num_args);
   }
 
   snprintf(buf->statusmsg, STATUSMSG_MAX, "Not a command: %s", name);
@@ -118,6 +138,45 @@ static int cmd_file(Buffer *buf, const char *args)
   return 0;
 }
 
+static int cmd_goto(Buffer *buf, const char *args)
+{
+  if (!args || !args[0])
+  {
+    snprintf(buf->statusmsg, STATUSMSG_MAX, "Usage: :goto <line>");
+    return 0;
+  }
+
+  int target = atoi(args);
+  if (target < 1)
+    target = 1;
+
+  // Count total lines so we can clamp
+  int len = buffer_length(buf);
+  char *text = rope_to_string(buf->rope);
+  if (text == NULL)
+    return 0;
+
+  int total_lines = 1;
+  for (int i = 0; i < len; i++)
+    if (text[i] == '\n')
+      total_lines++;
+  free(text);
+
+  if (target > total_lines)
+    target = total_lines;
+
+  // Move cursor: dy = target_line - current_line (1-based → 0-based)
+  int current = cursor_line(buf); // 0-based visual line
+  int dest = target - 1;          // 0-based
+  buffer_move_cursor(buf, 0, dest - current);
+  // Jump to start of that line
+  while (buf->cursor > 0 && buffer_get_char(buf, buf->cursor - 1) != '\n')
+    buffer_move_cursor(buf, -1, 0);
+
+  snprintf(buf->statusmsg, STATUSMSG_MAX, "Line %d", target);
+  return 0;
+}
+
 void command_register_defaults(void)
 {
   command_register("q", cmd_quit);
@@ -127,4 +186,6 @@ void command_register_defaults(void)
   command_register("x", cmd_write_quit);
   command_register("file", cmd_file);
   command_register("f", cmd_file);
+  command_register("goto", cmd_goto);
+  command_register("g", cmd_goto);
 }

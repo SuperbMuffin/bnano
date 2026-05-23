@@ -136,9 +136,14 @@ void history_undo(Buffer *b)
     return;
   }
 
-  // Push current state onto redo stack
-  if (redo_top < MAX_HISTORY)
-    redo_stack[redo_top++] = snapshot_create(b);
+  // Push current state onto redo stack, evicting oldest if full
+  if (redo_top >= MAX_HISTORY)
+  {
+    snapshot_free(&redo_stack[0]);
+    memmove(&redo_stack[0], &redo_stack[1], (size_t) (MAX_HISTORY - 1) * sizeof(Snapshot));
+    redo_top--;
+  }
+  redo_stack[redo_top++] = snapshot_create(b);
 
   Snapshot *s = &undo_stack[--undo_top];
   snapshot_restore(b, s);
@@ -156,9 +161,14 @@ void history_redo(Buffer *b)
     return;
   }
 
-  // Push current state onto undo stack
-  if (undo_top < MAX_HISTORY)
-    undo_stack[undo_top++] = snapshot_create(b);
+  // Push current state onto undo stack, evicting oldest if full
+  if (undo_top >= MAX_HISTORY)
+  {
+    snapshot_free(&undo_stack[0]);
+    memmove(&undo_stack[0], &undo_stack[1], (size_t) (MAX_HISTORY - 1) * sizeof(Snapshot));
+    undo_top--;
+  }
+  undo_stack[undo_top++] = snapshot_create(b);
 
   Snapshot *s = &redo_stack[--redo_top];
   snapshot_restore(b, s);

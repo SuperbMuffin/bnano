@@ -297,7 +297,12 @@ Rope *rope_rebalance(Rope *r)
 
   int n = count_leaves(r);
   if (n == 0)
-    return r;
+  {
+    // The rope has internal nodes but no leaves — free the skeleton and
+    // return a fresh empty rope to avoid leaking the node structure.
+    rope_free(r);
+    return rope_create("");
+  }
 
   Rope **leaves = malloc((size_t) n * sizeof(Rope *));
   if (leaves == NULL)

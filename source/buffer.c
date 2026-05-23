@@ -242,6 +242,14 @@ void buffer_move_cursor(Buffer *b, int dx, int dy)
       }
     }
 
+    // If target_line is beyond the last line, clamp to the actual last line.
+    // In that case found_start is false and we stay where we are.
+    if (!found_start)
+    {
+      free(text);
+      return;
+    }
+
     free(text);
 
     // Clamp to line length, preserving saved column.

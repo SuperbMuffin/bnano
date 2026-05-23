@@ -11,17 +11,20 @@ void fileio_open(Buffer *b, const char *path)
   if (f == NULL)
     return;
 
-  // Free the existing rope before reinitialising. buffer_init will create a
-  // fresh empty rope which we immediately replace — free that one too so we
-  // don't leak it.
+  // Reset buffer state without touching filename (already set by caller).
+  // We free the old rope here and assign the new one below — no need to
+  // round-trip through buffer_init which would allocate a throwaway rope.
   rope_free(b->rope);
-  b->rope = NULL;
-
-  char *saved = b->filename;
-  b->filename = NULL;
-  buffer_init(b);     // creates a throwaway empty rope
-  rope_free(b->rope); // free it — we're about to replace it
-  b->filename = saved;
+  b->cursor = 0;
+  b->saved_col = 0;
+  b->rowoff = 0;
+  b->cursor_cx = 0;
+  b->cursor_cy = 0;
+  b->mode = MODE_NORMAL;
+  b->cmdlen = 0;
+  b->cmdbuf[0] = '\0';
+  b->statusmsg[0] = '\0';
+  b->dirty = 0;
 
   // Read the entire file in one shot, then create the rope from it.
   // This avoids N chunk insertions (each triggering a rebalance) on open.

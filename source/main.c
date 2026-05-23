@@ -6,37 +6,12 @@
 #include "terminal.h"
 #include "ui.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
 int main(int argc, char *argv[])
 {
   config_load();
-
-  FILE *dbg = fopen("/tmp/bnano.log", "w");
-  if (dbg)
-  {
-    fprintf(dbg, "tab_width: %d\n", g_config.tab_width);
-  }
-
-  const char *home = getenv("HOME");
-  if (dbg)
-  {
-    fprintf(dbg, "home: %s\n", home ? home : "(null)");
-  }
-  if (home && dbg)
-  {
-    char path[4096];
-    snprintf(path, sizeof(path), "%s/.config/bnano/bnano.conf", home);
-    fprintf(dbg, "config path: %s\n", path);
-    FILE *test = fopen(path, "r");
-    fprintf(dbg, "file open: %s\n", test ? "yes" : "no");
-    if (test)
-      fclose(test);
-  }
-  if (dbg)
-    fclose(dbg);
 
   terminal_enable_raw_mode();
   terminal_enable_alt_screen();
@@ -182,7 +157,25 @@ int main(int argc, char *argv[])
       else if (c == 127)
       {
         history_on_action(&buf, ACTION_DELETE);
-        buffer_delete_char(&buf);
+        int deleted = 0;
+        if (g_config.smart_backspace && buf.cursor > 0)
+        {
+          // Count spaces immediately before the cursor
+          int col = cursor_col(&buf);
+          int spaces = 0;
+          while (spaces < col && spaces < g_config.tab_width &&
+                 buffer_get_char(&buf, buf.cursor - 1 - spaces) == ' ')
+            spaces++;
+          // Delete the whole tab stop if the spaces align to one
+          if (spaces > 0 && col % g_config.tab_width == 0)
+          {
+            for (int i = 0; i < spaces; i++)
+              buffer_delete_char(&buf);
+            deleted = 1;
+          }
+        }
+        if (!deleted)
+          buffer_delete_char(&buf);
       }
       else if (c == '\t')
       {

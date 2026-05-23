@@ -13,7 +13,7 @@ void config_defaults(void)
 {
   g_config.tab_width = 4;
   g_config.smart_backspace = 1;
-  g_config.show_line_numbers = 0;
+  g_config.line_numbers = LINE_NUMBERS_NONE;
 }
 
 // ---------------------------------------------------------------------------
@@ -48,9 +48,16 @@ static void apply(const char *section, const char *key, const char *value)
   }
   else if (strcmp(section, "ui") == 0)
   {
-    if (strcmp(key, "show_line_numbers") == 0)
+    if (strcmp(key, "line_numbers") == 0)
     {
-      g_config.show_line_numbers = (strcmp(value, "true") == 0 || strcmp(value, "1") == 0) ? 1 : 0;
+      if (strcmp(value, "absolute") == 0)
+        g_config.line_numbers = LINE_NUMBERS_ABSOLUTE;
+      else if (strcmp(value, "relative") == 0)
+        g_config.line_numbers = LINE_NUMBERS_RELATIVE;
+      else if (strcmp(value, "both") == 0)
+        g_config.line_numbers = LINE_NUMBERS_BOTH;
+      else
+        g_config.line_numbers = LINE_NUMBERS_NONE;
     }
   }
 }

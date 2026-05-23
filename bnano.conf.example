@@ -1,0 +1,26 @@
+# bnano configuration file
+# Copy to ~/.config/bnano/bnano.conf and edit as needed.
+#
+#   mkdir -p ~/.config/bnano
+#   cp bnano.conf.example ~/.config/bnano/bnano.conf
+#
+# Both = and : work as separators.
+# Unknown keys are silently ignored.
+
+# ---------------------------------------------------------------------------
+# editor
+# ---------------------------------------------------------------------------
+
+editor.tab_width: 4           # number of spaces a tab expands to (1-16)
+editor.smart_backspace: true  # backspace deletes a full tab-stop worth of spaces
+
+# ---------------------------------------------------------------------------
+# ui
+# ---------------------------------------------------------------------------
+
+# Line numbers. Options: none, absolute, relative, both
+#   none     - no line numbers
+#   absolute - always shows true line number
+#   relative - always shows distance from cursor
+#   both     - current line shows absolute, others show relative distance
+ui.line_numbers: none

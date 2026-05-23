@@ -4,6 +4,14 @@
 // Runtime configuration — loaded from ~/.config/bnano/bnano.conf
 // All fields have defaults and the file is optional.
 
+typedef enum
+{
+  LINE_NUMBERS_NONE,     // ui.line_numbers: none
+  LINE_NUMBERS_ABSOLUTE, // ui.line_numbers: absolute
+  LINE_NUMBERS_RELATIVE, // ui.line_numbers: relative
+  LINE_NUMBERS_BOTH,     // ui.line_numbers: both  (absolute on cursor, relative elsewhere)
+} LineNumberMode;
+
 typedef struct
 {
   // [editor]
@@ -11,7 +19,7 @@ typedef struct
   int smart_backspace; // editor.smart_backspace  (default: 1)
 
   // [ui]
-  int show_line_numbers; // ui.show_line_numbers   (default: 0)
+  LineNumberMode line_numbers; // ui.line_numbers  (default: none)
 } Config;
 
 // Global config instance — accessible from any module that includes config.h

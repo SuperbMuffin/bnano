@@ -1,6 +1,6 @@
 CC = clang
 CFLAGS = -Wall -Wextra -Werror -pedantic -std=c99 -g -Iinclude -MMD -MP
-SRC = source/main.c source/terminal.c source/buffer.c source/rope.c source/fileio.c source/ui.c source/command.c source/history.c source/config.c
+SRC = source/main.c source/terminal.c source/buffer.c source/rope.c source/fileio.c source/ui.c source/command.c source/history.c source/config.c source/motion.c
 OBJ = $(SRC:source/%.c=build/%.o)
 DEP = $(OBJ:.o=.d)
 

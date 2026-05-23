@@ -3,6 +3,7 @@
 #include "config.h"
 #include "fileio.h"
 #include "history.h"
+#include "motion.h"
 #include "terminal.h"
 #include "ui.h"
 
@@ -124,6 +125,21 @@ int main(int argc, char *argv[])
         buffer_move_cursor(&buf, 0, -1);
       else if (c == 'j' || c == KEY_DOWN)
         buffer_move_cursor(&buf, 0, 1);
+      else if (c == 'w')
+        motion_word_next(&buf);
+      else if (c == 'b')
+        motion_word_back(&buf);
+      else if (c == 'e')
+        motion_word_end(&buf);
+      else if (c == 'G')
+        motion_file_end(&buf);
+      else if (c == 'g')
+      {
+        // peek at next key for gg
+        int c2 = terminal_read_key();
+        if (c2 == 'g')
+          motion_file_top(&buf);
+      }
       else if (c == 'x')
       {
         int len = buffer_length(&buf);

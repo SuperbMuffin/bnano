@@ -1,15 +1,43 @@
 #include "buffer.h"
 #include "command.h"
+#include "config.h"
 #include "fileio.h"
 #include "history.h"
 #include "terminal.h"
 #include "ui.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
 int main(int argc, char *argv[])
 {
+  config_load();
+
+  FILE *dbg = fopen("/tmp/bnano.log", "w");
+  if (dbg)
+  {
+    fprintf(dbg, "tab_width: %d\n", g_config.tab_width);
+  }
+
+  const char *home = getenv("HOME");
+  if (dbg)
+  {
+    fprintf(dbg, "home: %s\n", home ? home : "(null)");
+  }
+  if (home && dbg)
+  {
+    char path[4096];
+    snprintf(path, sizeof(path), "%s/.config/bnano/bnano.conf", home);
+    fprintf(dbg, "config path: %s\n", path);
+    FILE *test = fopen(path, "r");
+    fprintf(dbg, "file open: %s\n", test ? "yes" : "no");
+    if (test)
+      fclose(test);
+  }
+  if (dbg)
+    fclose(dbg);
+
   terminal_enable_raw_mode();
   terminal_enable_alt_screen();
 
@@ -160,7 +188,7 @@ int main(int argc, char *argv[])
       {
         // Expand tab to spaces, aligning to the next tab stop
         history_on_action(&buf, ACTION_INSERT);
-        int spaces = TAB_WIDTH - (cursor_col(&buf) % TAB_WIDTH);
+        int spaces = g_config.tab_width - (cursor_col(&buf) % g_config.tab_width);
         for (int i = 0; i < spaces; i++)
           buffer_insert_char(&buf, ' ');
       }

@@ -13,7 +13,6 @@ typedef enum
 
 #define CMDBUF_MAX 128
 #define STATUSMSG_MAX 256
-#define TAB_WIDTH 4
 
 typedef struct
 {

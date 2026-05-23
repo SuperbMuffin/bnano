@@ -18,6 +18,41 @@ RESET="\033[0m"
 passed=0
 failed=0
 
+# Read lines from a test binary's stdout and collapse consecutive PASS lines.
+# A streak of N passes becomes:  PASS  [first_name]  x N  (x N in bold green)
+# A single pass stays as-is.     PASS  [name]
+# FAIL/CRASH lines always print individually and break the streak.
+print_with_streaks() {
+  streak=0
+  first_name=""
+
+  flush_streak() {
+    if [ "$streak" -eq 1 ]; then
+      echo -e "PASS  [${first_name}]"
+    elif [ "$streak" -gt 1 ]; then
+      echo -e "PASS  ${GREEN}${BOLD}x${streak}${RESET}"
+    fi
+    streak=0
+    first_name=""
+  }
+
+  while IFS= read -r line; do
+    if [[ "$line" == PASS* ]]; then
+      name="${line#PASS  [}"
+      name="${name%]}"
+      if [ "$streak" -eq 0 ]; then
+        first_name="$name"
+      fi
+      streak=$((streak + 1))
+    else
+      flush_streak
+      echo -e "$line"
+    fi
+  done
+
+  flush_streak
+}
+
 for test_file in "$TESTS_DIR"/*/test_*.c; do
   suite_dir="$(dirname "$test_file")"
   suite_name="$(basename "$suite_dir")"
@@ -50,7 +85,9 @@ for test_file in "$TESTS_DIR"/*/test_*.c; do
       "$COMMON_DIR/test_common.c" \
       $extra_sources \
       -o "$binary" 2>&1; then
-    if "$binary"; then
+    # Run the binary, pipe stdout through streak printer, preserve exit code.
+    "$binary" | print_with_streaks
+    if [ "${PIPESTATUS[0]}" -eq 0 ]; then
       echo -e "${GREEN}PASSED${RESET}"
       passed=$((passed + 1))
     else

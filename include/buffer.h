@@ -31,6 +31,7 @@ typedef struct
 } Buffer;
 
 void buffer_init(Buffer *b);
+void buffer_reset(Buffer *b); // reset editing state, preserving filename
 void buffer_free(Buffer *b);
 
 void buffer_set_filename(Buffer *b, const char *filename);

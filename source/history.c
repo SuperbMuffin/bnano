@@ -149,7 +149,7 @@ void history_undo(Buffer *b)
   snapshot_restore(b, s);
   snapshot_free(s);
 
-  snprintf(b->statusmsg, STATUSMSG_MAX, "Undid change #%d", undo_top + 1);
+  snprintf(b->statusmsg, STATUSMSG_MAX, "Undid change");
   last_action = ACTION_NONE;
 }
 
@@ -174,6 +174,6 @@ void history_redo(Buffer *b)
   snapshot_restore(b, s);
   snapshot_free(s);
 
-  snprintf(b->statusmsg, STATUSMSG_MAX, "Redid change #%d", undo_top);
+  snprintf(b->statusmsg, STATUSMSG_MAX, "Redid change");
   last_action = ACTION_NONE;
 }

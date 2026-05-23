@@ -6,8 +6,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-void buffer_init(Buffer *b)
+void buffer_reset(Buffer *b)
 {
+  rope_free(b->rope);
+  b->rope = rope_create("");
   b->cursor = 0;
   b->saved_col = 0;
   b->rowoff = 0;
@@ -17,9 +19,14 @@ void buffer_init(Buffer *b)
   b->cmdlen = 0;
   b->cmdbuf[0] = '\0';
   b->statusmsg[0] = '\0';
-  b->filename = NULL;
   b->dirty = 0;
-  b->rope = rope_create("");
+}
+
+void buffer_init(Buffer *b)
+{
+  b->filename = NULL;
+  b->rope = NULL; // buffer_reset will allocate it
+  buffer_reset(b);
 }
 
 // Internal: find the byte offset of target_line given a pre-flattened string.

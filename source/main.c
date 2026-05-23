@@ -7,6 +7,7 @@
 #include "terminal.h"
 #include "ui.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -76,10 +77,17 @@ int main(int argc, char *argv[])
           buf.statusmsg[0] = '\0';
         }
       }
-      else if (c >= 32 && c <= 126 && buf.cmdlen < CMDBUF_MAX - 1)
+      else if (c >= 32 && c <= 126)
       {
-        buf.cmdbuf[buf.cmdlen++] = (char) c;
-        buf.cmdbuf[buf.cmdlen] = '\0';
+        if (buf.cmdlen < CMDBUF_MAX - 1)
+        {
+          buf.cmdbuf[buf.cmdlen++] = (char) c;
+          buf.cmdbuf[buf.cmdlen] = '\0';
+        }
+        else
+        {
+          snprintf(buf.statusmsg, STATUSMSG_MAX, "Command too long (max %d chars)", CMDBUF_MAX - 1);
+        }
       }
     }
     else if (buf.mode == MODE_NORMAL)
@@ -135,10 +143,11 @@ int main(int argc, char *argv[])
         motion_file_end(&buf);
       else if (c == 'g')
       {
-        // peek at next key for gg
-        int c2 = terminal_read_key();
+        // peek at next key for gg, with a timeout so a lone 'g' doesn't block
+        int c2 = terminal_read_key_timeout(500);
         if (c2 == 'g')
           motion_file_top(&buf);
+        // if timeout (-1) or unrecognised key, just ignore — don't re-dispatch
       }
       else if (c == 'x')
       {

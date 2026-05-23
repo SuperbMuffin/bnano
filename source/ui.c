@@ -101,7 +101,7 @@ static int digit_width(int n)
   return 5;
 }
 
-// Gutter width = digit_width(total_lines) + 2 (space + separator "│ ")
+// Gutter width = digit_width(total_lines) + 2 (space + separator)
 // Returns 0 when line numbers are disabled.
 static int gutter_width(int total_lines)
 {
@@ -136,12 +136,11 @@ static void render_gutter(struct abuf *ab, int visual_line, int cur_visual_line,
       glen = snprintf(gutter, sizeof(gutter), " %*d ", num_width, abs_line);
       break;
     case LINE_NUMBERS_RELATIVE:
-      if (is_current)
-        glen = snprintf(gutter, sizeof(gutter), " %*d ", num_width, abs_line);
-      else
-        glen = snprintf(gutter, sizeof(gutter), " %*d ", num_width, rel_dist);
+      // All relative — current line shows 0
+      glen = snprintf(gutter, sizeof(gutter), " %*d ", num_width, rel_dist);
       break;
     case LINE_NUMBERS_BOTH:
+      // Relative everywhere, but current line shows absolute instead of 0
       if (is_current)
         glen = snprintf(gutter, sizeof(gutter), " %*d ", num_width, abs_line);
       else

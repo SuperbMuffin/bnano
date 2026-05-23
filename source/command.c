@@ -146,9 +146,11 @@ static int cmd_goto(Buffer *buf, const char *args)
     return 0;
   }
 
-  int target = atoi(args);
-  if (target < 1)
-    target = 1;
+  char *end;
+  long target_l = strtol(args, &end, 10);
+  if (end == args || *end != '\0' || target_l < 1)
+    target_l = 1;
+  int target = (int) target_l;
 
   // Count total lines so we can clamp
   int len = buffer_length(buf);

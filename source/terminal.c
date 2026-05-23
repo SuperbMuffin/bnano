@@ -21,7 +21,12 @@ static struct termios orig_termios;
 void terminal_get_size(int *rows, int *cols)
 {
   struct winsize ws;
-  ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
+  if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_row == 0 || ws.ws_col == 0)
+  {
+    *rows = 24;
+    *cols = 80;
+    return;
+  }
   *rows = ws.ws_row;
   *cols = ws.ws_col;
 }
@@ -145,10 +150,35 @@ int terminal_read_key(void)
   return (unsigned char) c;
 }
 
-void terminal_clear_screen(void)
+// Like terminal_read_key but returns -1 if no key arrives within timeout_ms.
+int terminal_read_key_timeout(int timeout_ms)
 {
-  write(STDOUT_FILENO, "\x1b[2J", 4);
-  write(STDOUT_FILENO, "\x1b[H", 3);
+  struct pollfd fds[2];
+  fds[0].fd = STDIN_FILENO;
+  fds[0].events = POLLIN;
+  fds[1].fd = resize_pipe[0];
+  fds[1].events = POLLIN;
+
+  int r = poll(fds, 2, timeout_ms);
+  if (r <= 0)
+    return -1;
+
+  if (fds[1].revents & POLLIN)
+  {
+    char discard;
+    while (read(resize_pipe[0], &discard, 1) > 0)
+      ;
+    return KEY_RESIZE;
+  }
+
+  if (!(fds[0].revents & POLLIN))
+    return -1;
+
+  char c;
+  ssize_t nread = read(STDIN_FILENO, &c, 1);
+  if (nread <= 0)
+    return -1;
+  return (unsigned char) c;
 }
 
 void terminal_enable_alt_screen(void)

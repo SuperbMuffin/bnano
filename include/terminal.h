@@ -21,11 +21,11 @@ void terminal_enable_alt_screen(void);
 void terminal_disable_alt_screen(void);
 
 // Screen primitives
-void terminal_clear_screen(void);
 void terminal_get_size(int *rows, int *cols);
 void terminal_write(const char *s);
 
 // Input
 int terminal_read_key(void);
+int terminal_read_key_timeout(int timeout_ms); // returns -1 on timeout
 
 #endif // TERMINAL_H

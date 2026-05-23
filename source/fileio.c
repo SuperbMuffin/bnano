@@ -11,22 +11,10 @@ void fileio_open(Buffer *b, const char *path)
   if (f == NULL)
     return;
 
-  // Reset buffer state without touching filename (already set by caller).
-  // We free the old rope here and assign the new one below — no need to
-  // round-trip through buffer_init which would allocate a throwaway rope.
-  rope_free(b->rope);
-  b->cursor = 0;
-  b->saved_col = 0;
-  b->rowoff = 0;
-  b->cursor_cx = 0;
-  b->cursor_cy = 0;
-  b->mode = MODE_NORMAL;
-  b->cmdlen = 0;
-  b->cmdbuf[0] = '\0';
-  b->statusmsg[0] = '\0';
-  b->dirty = 0;
+  // Reset all editing state (allocates a fresh empty rope), preserving filename.
+  buffer_reset(b);
 
-  // Read the entire file in one shot, then create the rope from it.
+  // Read the entire file in one shot, then replace the rope with it.
   // This avoids N chunk insertions (each triggering a rebalance) on open.
   fseek(f, 0, SEEK_END);
   long file_size = ftell(f);
@@ -36,14 +24,15 @@ void fileio_open(Buffer *b, const char *path)
   if (text == NULL)
   {
     fclose(f);
-    b->rope = rope_create("");
-    return;
+    return; // buffer_reset already gave us a valid empty rope
   }
 
   size_t n = fread(text, 1, (size_t) file_size, f);
   text[n] = '\0';
   fclose(f);
 
+  // Replace the empty rope buffer_reset allocated with the file contents.
+  rope_free(b->rope);
   b->rope = rope_create(text);
   free(text);
 }

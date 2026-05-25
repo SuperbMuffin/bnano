@@ -111,9 +111,15 @@ static int cmd_write(Buffer *buf, const char *args)
     snprintf(buf->statusmsg, STATUSMSG_MAX, "No filename");
     return 0;
   }
-  fileio_save(buf, target);
-  buf->dirty = 0;
-  snprintf(buf->statusmsg, STATUSMSG_MAX, "Written: %s", target);
+  if (fileio_save(buf, target))
+  {
+    buf->dirty = 0;
+    snprintf(buf->statusmsg, STATUSMSG_MAX, "Written: %s", target);
+  }
+  else
+  {
+    snprintf(buf->statusmsg, STATUSMSG_MAX, "Write failed: %s", target);
+  }
   return 0;
 }
 

@@ -44,6 +44,10 @@
 #define STYLE_PILL_NORMAL ESC_RESET COLOR_BG_BLUE COLOR_FG_WHITE
 #define STYLE_PILL_INSERT ESC_RESET COLOR_BG_GREEN COLOR_FG_BLACK
 
+// Status bar spacer between the mode pill and the status message
+#define STATUS_SPACER "  "
+#define STATUS_SPACER_LEN 2
+
 // ---------------------------------------------------------------------------
 // Append buffer — write-accumulator to avoid many small write() calls
 // ---------------------------------------------------------------------------
@@ -152,20 +156,24 @@ static void render_gutter(struct abuf *ab, int visual_line, int cur_visual_line,
 
   (void) total_lines;
   ab_append(ab, gutter, glen);
-  ab_append(ab, ESC_RESET, sizeof(ESC_RESET) - 1);
+  ab_append(ab, STYLE_BAR, sizeof(STYLE_BAR) - 1);
 }
 
 // ---------------------------------------------------------------------------
 // Content area
 // ---------------------------------------------------------------------------
 
-static void render_content(struct abuf *ab, Buffer *buffer)
+// Content area — renders visible lines and returns total logical line count
+// for the caller to reuse (avoids a second rope_to_string in render_statusbar).
+static int render_content(struct abuf *ab, Buffer *buffer)
 {
   int len = buffer_length(buffer);
 
   char *text = rope_to_string(buffer->rope);
   if (text == NULL)
-    return;
+    return 1;
+
+  ab_lit(ab, STYLE_BAR);
 
   int total_lines = count_lines(text, len);
   int num_width = digit_width(total_lines);
@@ -222,13 +230,15 @@ static void render_content(struct abuf *ab, Buffer *buffer)
     ab_lit(ab, ESC_CLEAR_LINE "\r\n");
     y++;
   }
+
+  return total_lines;
 }
 
 // ---------------------------------------------------------------------------
 // Status bar
 // ---------------------------------------------------------------------------
 
-static void render_statusbar(struct abuf *ab, Buffer *buffer)
+static void render_statusbar(struct abuf *ab, Buffer *buffer, int total_lines)
 {
   if (buffer->mode == MODE_COMMAND)
   {
@@ -268,28 +278,23 @@ static void render_statusbar(struct abuf *ab, Buffer *buffer)
   // Rest of bar
   ab_lit(ab, STYLE_BAR);
 
-  int bar_len = 0;
+  /* msg_used = visible chars consumed by the status message area (spacer + text) */
+  int msg_used = 0;
   if (buffer->statusmsg[0])
   {
-    bar_len = (int) strlen(buffer->statusmsg);
-    ab_lit(ab, "  ");
-    ab_append(ab, buffer->statusmsg, bar_len);
-    bar_len += 2;
+    msg_used = (int) strlen(buffer->statusmsg) + STATUS_SPACER_LEN;
+    ab_lit(ab, STATUS_SPACER);
+    ab_append(ab, buffer->statusmsg, msg_used - STATUS_SPACER_LEN);
   }
 
-  int used = (int) strlen(mode_str) + bar_len;
+  int used = (int) strlen(mode_str) + msg_used;
   for (int i = used; i < term_cols; i++)
     ab_append(ab, " ", 1);
   ab_lit(ab, STYLE_RESET);
 
   // Reposition cursor in content area, offset by gutter width.
-  // We need total line count to compute the same gutter_width as render_content.
   int cy = cursor_line(buffer) - buffer->rowoff;
   int cx = cursor_col(buffer);
-  int blen_rope = buffer_length(buffer);
-  char *full_text = rope_to_string(buffer->rope);
-  int total_lines = full_text ? count_lines(full_text, blen_rope) : 1;
-  free(full_text);
   int gw = gutter_width(total_lines);
   char buf[32];
   int blen = snprintf(buf, sizeof(buf), "\x1b[%d;%dH", cy + 1, cx + gw + 1);
@@ -308,8 +313,10 @@ void ui_render(Buffer *buffer)
   ab_lit(&ab, ESC_HIDE_CURSOR);
   ab_lit(&ab, ESC_CURSOR_HOME);
 
-  render_content(&ab, buffer);
-  render_statusbar(&ab, buffer);
+  // render_content does the one rope_to_string allocation for the frame and
+  // returns total_lines so render_statusbar can reuse it without a second alloc.
+  int total_lines = render_content(&ab, buffer);
+  render_statusbar(&ab, buffer, total_lines);
 
   write(STDOUT_FILENO, ab.b, ab.len);
   ab_free(&ab);
